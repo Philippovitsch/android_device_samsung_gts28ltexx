@@ -23,6 +23,18 @@ on fs
     chmod 0660 /sys/devices/virtual/misc/umts_dm0/dm_state
     chown radio system /sys/devices/virtual/misc/umts_dm0/dm_state
 
+on post-fs-data
+    rm -r /data/data/com.android.providers.telephony/databases
+    rm -r /data/data/com.android.providers.telephony/shared_prefs
+
+    # Symlink telephony.db and preferred-apn.xml
+    symlink /data/user_de/0/com.android.providers.telephony/databases /data/data/com.android.providers.telephony/databases
+    symlink /data/user_de/0/com.android.providers.telephony/shared_prefs /data/data/com.android.providers.telephony/shared_prefs
+
+    # restart RIL <--> modem stack to account for new locations
+    restart cpboot-daemon
+    restart ril-daemon
+
 # Parse hardware revision (needs to happen before cbd starts)
 service modemloader /system/bin/modemloader
     class core
@@ -40,7 +52,7 @@ on property:ro.cbd.disable=1
 on property:ro.cbd.restart=1
     restart cpboot-daemon
     restart ril-daemon
-
+    
 on property:ro.debug_level=0x494d
     write /d/tracing/buffer_size_kb 1408
     write /d/tracing/events/modem_if/mif_log/enable 1
